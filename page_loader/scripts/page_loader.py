@@ -11,7 +11,7 @@ def main():
                         type=str)
     parser.add_argument('url', type=str)
     args = parser.parse_args()
-    print(download(args.output, args.url))
+    print(download(args.url, args.output))
 
 
 if __name__ == '__main__':

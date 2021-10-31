@@ -19,6 +19,7 @@ pytest = "^6.2.5"
 mypy = "^0.910"
 autopep8 = "^1.6.0"
 pytest-cov = "^3.0.0"
+types-requests = "^2.25.11"
 
 [tool.poetry.scripts]
 page-loader = "page_loader.scripts.page_loader:main"
