@@ -5,7 +5,8 @@ from page_loader.loader import download
 
 def main():
     parser = argparse.ArgumentParser(description='Generate diff')
-    parser.add_argument('--output',
+    parser.add_argument('-o',
+                        '--output',
                         default=os.getcwd(),
                         help='set output path',
                         type=str)
