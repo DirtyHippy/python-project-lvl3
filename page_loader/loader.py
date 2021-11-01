@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 PATH_TO_IMAGES = '_files'
 FILE_EXT = '.html'
+DELIMETER = '-'
 
 
 def remove_scheme_from_url(url: str) -> str:
@@ -16,7 +17,7 @@ def remove_scheme_from_url(url: str) -> str:
 
 
 def replace_characters(url: str) -> str:
-    return re.sub(r"[^0-9a-zA-Z]", "-", url)
+    return re.sub(r"[^0-9a-zA-Z]", DELIMETER, url)
 
 
 def gen_output_file_name(url: str, output_path: str) -> str:
@@ -35,5 +36,17 @@ def download(url: str, output_path: str):
     if page.status_code == 200:
         soup = BeautifulSoup(page.text, "html.parser")
         output_file_name = gen_output_file_name(url, output_path)
+        output_path_to_images = f'{output_file_name}{PATH_TO_IMAGES}'
+        replace_img_src(soup, output_path_to_images)
         with open(output_file_name, 'w', encoding='utf-8') as f:
             f.write(soup.prettify())
+
+
+def replace_img_src(soup: BeautifulSoup, output_path_to_images: str):
+    images = soup.findAll('img')
+    for img in images:
+        img['src'] = output_path_to_images + img['src'].replace('//', DELIMETER)
+
+
+def save_images():
+    pass
