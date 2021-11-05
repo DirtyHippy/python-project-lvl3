@@ -2,19 +2,21 @@ import requests
 import re
 import os
 from bs4 import BeautifulSoup  # type: ignore
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
+import logging
 
 
-END_PATH_TO_IMAGES = '_files'
+POSTFIX_RESOURCE_PATH = '_files'
 FILE_EXT = '.html'
 DELIMETER = '-'
-INDENT = '   '
 
 
 def remove_scheme_from_url(url: str) -> str:
     parsed_url = urlparse(url)
-    scheme = f"{parsed_url.scheme}://"
-    return parsed_url.geturl().replace(scheme, '', 1)
+    if parsed_url.scheme:
+        scheme = f"{parsed_url.scheme}://"
+        return parsed_url.geturl().replace(scheme, '', 1)
+    return parsed_url.geturl()
 
 
 def replace_characters(url: str) -> str:
@@ -27,37 +29,64 @@ def format_url(url: str) -> str:
     return formatted_url
 
 
-def download(url: str, output_path: str):
+def download(url: str, output_path: str = os.getcwd()):
     if not os.path.exists(output_path):
         raise FileNotFoundError(output_path)
     elif not os.path.isdir(output_path):
         raise IsADirectoryError(output_path)
 
-    page = requests.get(url)
-    if page.status_code == 200:
-        soup = BeautifulSoup(page.text, "html.parser")
-        formatted_url = format_url(url)
-        file_name = os.path.join(output_path, formatted_url + FILE_EXT)
-        # path_to_images = os.path.join(output_path, formatted_url + END_PATH_TO_IMAGES)
-        replace_img_src(soup, url, formatted_url + END_PATH_TO_IMAGES)
-        save_html(soup, file_name)
-        return file_name
+    try:
+        response = requests.get(url)
+    except requests.exceptions.RequestException as err:
+        error_msg = f"Can't download url {url}"
+        logging.error(error_msg)
+        raise err(error_msg)
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    formatted_url = format_url(url)
+    full_file_name = os.path.join(output_path, formatted_url + FILE_EXT)
+    resource_path = formatted_url + POSTFIX_RESOURCE_PATH
+    save_all_resources(soup, url, output_path, resource_path)
+    save_html(soup, full_file_name)
+    return full_file_name
 
 
-def save_html(soup: BeautifulSoup, file_name: str):
-    with open(file_name, 'w', encoding='utf-8') as f:
+def save_html(soup: BeautifulSoup, full_file_name: str):
+    with open(full_file_name, 'w', encoding='utf-8') as f:
         f.write(soup.prettify())
 
 
-def replace_img_src(soup: BeautifulSoup, url: str, path_to_images: str):
-    images = soup.findAll('img')
-    hostname = urlparse(url).hostname
-    if hostname:
-        hostname = hostname.replace('.', DELIMETER)
-    for img in images:
-        new_src = hostname + img['src'].replace('/', DELIMETER)
-        img['src'] = os.path.join(path_to_images, new_src)
+def save_all_resources(soup: BeautifulSoup,
+                       url: str,
+                       output_path: str,
+                       resource_path: str):
+
+    full_resource_path = os.path.join(output_path, resource_path)
+    try:
+        os.mkdir(full_resource_path)
+    except OSError:
+        error_msg = f"Can't create directory {full_resource_path}"
+        logging.error(error_msg)
+        raise OSError(error_msg)
+    save_resource(soup, 'img', 'src', url, full_resource_path)
+    save_resource(soup, 'link', 'href', url, full_resource_path)
+    save_resource(soup, 'script', 'src', url, full_resource_path)
 
 
-def save_images():
-    pass
+def save_resource(soup: BeautifulSoup,
+                  tag: str,
+                  inner_tag: str,
+                  url: str,
+                  resource_path: str):
+
+    for res in soup.findAll(tag):
+        res_name = os.path.basename(res[inner_tag])
+        hostname_replaced = replace_characters(urlparse(url).hostname)
+        res_name_new = f'{hostname_replaced}{DELIMETER}{res_name}'
+        res_url = urljoin(url, res.get(inner_tag))
+        res_path = os.path.join(resource_path, res_name)
+        res[inner_tag] = os.path.join(os.path.basename(resource_path), res_name_new)
+        if not os.path.isfile(res_path):
+            with open(res_path, 'wb') as file:
+                response = requests.get(res_url)
+                file.write(response.content)
