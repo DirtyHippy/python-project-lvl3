@@ -9,6 +9,9 @@ import logging
 POSTFIX_RESOURCE_PATH = '_files'
 FILE_EXT = '.html'
 DELIMETER = '-'
+RESOURCES = {'img': 'src',
+             'link': 'href',
+             'script': 'src'}
 
 
 def remove_scheme_from_url(url: str) -> str:
@@ -37,10 +40,10 @@ def download(url: str, output_path: str = os.getcwd()):
 
     try:
         response = requests.get(url)
-    except requests.exceptions.RequestException as err:
+    except requests.exceptions.RequestException:
         error_msg = f"Can't download url {url}"
         logging.error(error_msg)
-        raise err(error_msg)
+        raise Exception(error_msg)
 
     soup = BeautifulSoup(response.text, "html.parser")
     formatted_url = format_url(url)
@@ -68,9 +71,8 @@ def save_all_resources(soup: BeautifulSoup,
         error_msg = f"Can't create directory {full_resource_path}"
         logging.error(error_msg)
         raise OSError(error_msg)
-    save_resource(soup, 'img', 'src', url, full_resource_path)
-    save_resource(soup, 'link', 'href', url, full_resource_path)
-    save_resource(soup, 'script', 'src', url, full_resource_path)
+    for tag, inner_tag in RESOURCES.items():
+        save_resource(soup, tag, inner_tag, url, full_resource_path)
 
 
 def save_resource(soup: BeautifulSoup,
@@ -81,7 +83,9 @@ def save_resource(soup: BeautifulSoup,
 
     for res in soup.findAll(tag):
         res_name = os.path.basename(res[inner_tag])
-        hostname_replaced = replace_characters(urlparse(url).hostname)
+        hostname = urlparse(url).hostname
+        if hostname is not None:
+            hostname_replaced = replace_characters(hostname)
         res_name_new = f'{hostname_replaced}{DELIMETER}{res_name}'
         res_url = urljoin(url, res.get(inner_tag))
         res_path = os.path.join(resource_path, res_name)
