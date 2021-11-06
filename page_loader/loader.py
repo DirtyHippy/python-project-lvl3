@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup  # type: ignore
 from urllib.parse import urlparse, urljoin
 import logging
 from progress.bar import Bar  # type: ignore
+from typing import Dict
 
 
 POSTFIX_RESOURCE_PATH = '_files'
@@ -33,6 +34,18 @@ def format_url(url: str) -> str:
     return formatted_url
 
 
+def format_res_name(url: str, res_path: str):
+    parsed_url = urlparse(url)
+    res_name, res_ext = os.path.splitext(res_path)
+    parsed_res = urlparse(res_name)
+    if res_ext == '':
+        res_ext = FILE_EXT
+    parsed_path = parsed_res.path
+    if not parsed_path.startswith('/'):
+        parsed_path = '/' + parsed_path
+    return replace_characters(f'{parsed_url.hostname}{parsed_path}') + res_ext
+
+
 def download(url: str, output_path: str = os.getcwd()):
     if not os.path.exists(output_path):
         raise FileNotFoundError(output_path)
@@ -50,7 +63,7 @@ def download(url: str, output_path: str = os.getcwd()):
     formatted_url = format_url(url)
     full_file_name = os.path.join(output_path, formatted_url + FILE_EXT)
     resource_path = formatted_url + POSTFIX_RESOURCE_PATH
-    save_all_resources(soup, url, output_path, resource_path)
+    save_resources(soup, url, output_path, resource_path)
     save_html(soup, full_file_name)
     return full_file_name
 
@@ -60,11 +73,10 @@ def save_html(soup: BeautifulSoup, full_file_name: str):
         f.write(soup.prettify())
 
 
-def save_all_resources(soup: BeautifulSoup,
-                       url: str,
-                       output_path: str,
-                       resource_path: str):
-    bar = Bar('Processing', max=len(soup.findAll(list(RESOURCES.keys()))))
+def save_resources(soup: BeautifulSoup,
+                   url: str,
+                   output_path: str,
+                   resource_path: str):
     full_resource_path = os.path.join(output_path, resource_path)
     try:
         os.mkdir(full_resource_path)
@@ -72,28 +84,30 @@ def save_all_resources(soup: BeautifulSoup,
         error_msg = f"Can't create directory {full_resource_path}"
         logging.error(error_msg)
         raise OSError(error_msg)
-    for tag, inner_tag in RESOURCES.items():
-        save_resource(soup, tag, inner_tag, url, full_resource_path, bar)
+
+    found_resources = {}
+    for tag in RESOURCES:
+        found_resources[tag] = soup.findAll(tag)
+    get_resource(found_resources, url, full_resource_path)
 
 
-def save_resource(soup: BeautifulSoup,
-                  tag: str,
-                  inner_tag: str,
-                  url: str,
-                  resource_path: str,
-                  bar: Bar):
-
-    for res in soup.findAll(tag):
-        res_name = os.path.basename(res[inner_tag])
-        hostname = urlparse(url).hostname
-        if hostname is not None:
-            hostname_replaced = replace_characters(hostname)
-        res_name_new = f'{hostname_replaced}{DELIMETER}{res_name}'
-        res_url = urljoin(url, res.get(inner_tag))
-        res_path = os.path.join(resource_path, res_name)
-        res[inner_tag] = os.path.join(os.path.basename(resource_path), res_name_new)
-        if not os.path.isfile(res_path):
-            response = requests.get(res_url)
-            with open(res_path, 'wb') as file:
-                file.write(response.content)
-        bar.next()
+def get_resource(found_resources: Dict[str, list],
+                 url: str,
+                 resource_path: str):
+    bar = Bar('Processing', max=sum([len(val) for val in found_resources.values()]))
+    for tag, resources in found_resources.items():
+        inner_tag = RESOURCES[tag]
+        for res in resources:
+            res_path_orig = res.get(inner_tag)
+            parsed_res = urlparse(res_path_orig)
+            parsed_url = urlparse(url)
+            if not parsed_res.netloc or parsed_url.netloc == parsed_res.netloc:
+                res_path_new = format_res_name(url, res_path_orig)
+                res_url = urljoin(url, res_path_orig)
+                full_res_path = os.path.join(resource_path, res_path_new)
+                res[inner_tag] = os.path.join(os.path.basename(resource_path), res_path_new)
+                if not os.path.isfile(full_res_path):
+                    response = requests.get(res_url)
+                    with open(full_res_path, 'wb') as file:
+                        file.write(response.content)
+            bar.next()

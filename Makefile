@@ -1,7 +1,7 @@
 install:
 	poetry install
 
-page-loader:
+loader:
 	poetry run page-loader
 
 build:
