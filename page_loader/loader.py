@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup  # type: ignore
 from progress.bar import Bar  # type: ignore
 from typing import Dict, Any
 from urllib.parse import urlparse, urljoin
+from functools import wraps
 
 
 POSTFIX_RESOURCE_PATH = '_files'
@@ -21,6 +22,17 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(stream=sys.stderr)
 logger.addHandler(handler)
+
+
+def write_log(function):
+    @wraps(function)
+    def inner(*args, **kwargs):
+        try:
+            return function(*args, **kwargs)
+        except Exception as e:
+            logger.debug(e)
+            raise e
+    return inner
 
 
 def remove_scheme_from_url(url: str) -> str:
@@ -53,12 +65,12 @@ def format_res_name(url: str, res_path: str):
     return replace_characters(f'{parsed_url.hostname}{parsed_path}') + res_ext
 
 
+@write_log
 def get_url(url: str) -> Any:
     try:
         response = requests.get(url)
         response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        logger.debug(e)
+    except requests.exceptions.RequestException:
         raise Exception(f"Can't download url {url}")
     return response
 
@@ -78,14 +90,14 @@ def save_html(soup: BeautifulSoup, output_path: str, formatted_url: str):
     return full_file_name
 
 
+@write_log
 def save_resources(soup: BeautifulSoup, url: str, output_path: str, formatted_url: str):
     full_resource_path = os.path.join(output_path, formatted_url + POSTFIX_RESOURCE_PATH)
     try:
         if not os.path.exists(output_path):
             raise FileNotFoundError
         os.mkdir(full_resource_path)
-    except OSError as e:
-        logger.debug(e)
+    except OSError:
         raise OSError(f"Can't create directory {full_resource_path}")
 
     found_resources = {}
