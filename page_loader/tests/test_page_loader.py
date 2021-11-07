@@ -1,9 +1,10 @@
 import tempfile
 import os
 import pytest
-from page_loader.loader import download
+from page_loader.loader import download, PARSER
 from bs4 import BeautifulSoup  # type: ignore
 from requests_mock import ANY
+
 IMAGE_TAG = 'img'
 LINK_TAG = 'link'
 SCRIPT_TAG = 'script'
@@ -30,19 +31,15 @@ def read(file_path, mode: str = 'r'):
     return result
 
 
-def read_image(file_path):
-    with open(file_path, 'rb') as f:
-        result = f.read()
-    return result
-
-
-def test_file_not_found_error():
-    with pytest.raises(FileNotFoundError):
+def test_file_not_found_error(requests_mock):
+    requests_mock.get(ANY, text='any resourse')
+    with pytest.raises(OSError):
         download(SIMPLE_URL, '')
 
 
-def test_is_a_directory_error():
-    with pytest.raises(IsADirectoryError):
+def test_is_a_directory_error(requests_mock):
+    requests_mock.get(ANY, text='any resourse')
+    with pytest.raises(OSError):
         download(SIMPLE_URL, os.path.abspath(__file__))
 
 
@@ -55,5 +52,5 @@ def test_download(requests_mock, test_file, result_expected, url):
     with tempfile.TemporaryDirectory() as tmpdirname:
         file_name = download(url, tmpdirname)
         soup_expected = BeautifulSoup(
-            read(get_fixture_path(result_expected)), "html.parser")
+            read(get_fixture_path(result_expected)), PARSER)
         assert read(file_name) == soup_expected.prettify()

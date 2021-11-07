@@ -1,11 +1,12 @@
 import requests
 import re
 import os
-from bs4 import BeautifulSoup  # type: ignore
-from urllib.parse import urlparse, urljoin
+import sys
 import logging
+from bs4 import BeautifulSoup  # type: ignore
 from progress.bar import Bar  # type: ignore
 from typing import Dict, Any
+from urllib.parse import urlparse, urljoin
 
 
 POSTFIX_RESOURCE_PATH = '_files'
@@ -14,6 +15,12 @@ DELIMETER = '-'
 RESOURCES = {'img': 'src',
              'link': 'href',
              'script': 'src'}
+PARSER = "html.parser"
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler(stream=sys.stderr)
+logger.addHandler(handler)
 
 
 def remove_scheme_from_url(url: str) -> str:
@@ -49,45 +56,35 @@ def format_res_name(url: str, res_path: str):
 def get_url(url: str) -> Any:
     try:
         response = requests.get(url)
-    except requests.exceptions.RequestException:
+    except requests.exceptions.RequestException as e:
         error_msg = f"Can't download url {url}"
-        logging.error(error_msg)
+        logger.debug(e)
         raise Exception(error_msg)
     return response
 
 
 def download(url: str, output_path: str = os.getcwd()):
-    if not os.path.exists(output_path):
-        raise FileNotFoundError(output_path)
-    elif not os.path.isdir(output_path):
-        raise IsADirectoryError(output_path)
-
     response = get_url(url)
-
-    soup = BeautifulSoup(response.text, "html.parser")
+    soup = BeautifulSoup(response.text, PARSER)
     formatted_url = format_url(url)
+    save_resources(soup, url, output_path, formatted_url)
+    return save_html(soup, output_path, formatted_url)
+
+
+def save_html(soup: BeautifulSoup, output_path: str, formatted_url: str):
     full_file_name = os.path.join(output_path, formatted_url + FILE_EXT)
-    resource_path = formatted_url + POSTFIX_RESOURCE_PATH
-    save_resources(soup, url, output_path, resource_path)
-    save_html(soup, full_file_name)
+    with open(full_file_name, 'w') as f:
+        f.write(soup.prettify())
     return full_file_name
 
 
-def save_html(soup: BeautifulSoup, full_file_name: str):
-    with open(full_file_name, 'w', encoding='utf-8') as f:
-        f.write(soup.prettify())
-
-
-def save_resources(soup: BeautifulSoup,
-                   url: str,
-                   output_path: str,
-                   resource_path: str):
-    full_resource_path = os.path.join(output_path, resource_path)
+def save_resources(soup: BeautifulSoup, url: str, output_path: str, formatted_url: str):
+    full_resource_path = os.path.join(output_path, formatted_url + POSTFIX_RESOURCE_PATH)
     try:
         os.mkdir(full_resource_path)
-    except OSError:
+    except OSError as e:
         error_msg = f"Can't create directory {full_resource_path}"
-        logging.error(error_msg)
+        logger.debug(e)
         raise OSError(error_msg)
 
     found_resources = {}
@@ -96,9 +93,7 @@ def save_resources(soup: BeautifulSoup,
     get_resource(found_resources, url, full_resource_path)
 
 
-def get_resource(found_resources: Dict[str, list],
-                 url: str,
-                 resource_path: str):
+def get_resource(found_resources: Dict[str, list], url: str, resource_path: str):
     bar = Bar('Processing', max=sum([len(val) for val in found_resources.values()]))
     for tag, resources in found_resources.items():
         inner_tag = RESOURCES[tag]
