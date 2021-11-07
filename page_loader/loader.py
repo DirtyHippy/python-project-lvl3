@@ -81,6 +81,8 @@ def save_html(soup: BeautifulSoup, output_path: str, formatted_url: str):
 def save_resources(soup: BeautifulSoup, url: str, output_path: str, formatted_url: str):
     full_resource_path = os.path.join(output_path, formatted_url + POSTFIX_RESOURCE_PATH)
     try:
+        if not os.path.exists(output_path):
+            raise FileNotFoundError
         os.mkdir(full_resource_path)
     except OSError as e:
         logger.debug(e)

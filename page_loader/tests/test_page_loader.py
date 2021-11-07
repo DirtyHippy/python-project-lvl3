@@ -31,16 +31,13 @@ def read(file_path, mode: str = 'r'):
     return result
 
 
-def test_file_not_found_error(requests_mock):
+@ pytest.mark.parametrize("output_path", ['',                          # FileNotFoundError
+                                          os.path.abspath(__file__)])  # IsADirectoryError
+def test_os_error(requests_mock, output_path):
     requests_mock.get(ANY, text='any resourse')
     with pytest.raises(OSError):
-        download(SIMPLE_URL, '')
-
-
-def test_is_a_directory_error(requests_mock):
-    requests_mock.get(ANY, text='any resourse')
-    with pytest.raises(OSError):
-        download(SIMPLE_URL, os.path.abspath(__file__))
+        with tempfile.TemporaryDirectory():
+            download(SIMPLE_URL, output_path)
 
 
 @ pytest.mark.parametrize("test_file, result_expected, url", [

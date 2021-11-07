@@ -10,7 +10,7 @@
 ```bash 
 pip install git+https://github.com/DirtyHippy/python-project-lvl3.git
 ```
-[![asciicast](https://asciinema.org/a/Ih7jeaHGhZVJt7SiVshnUvlSl.svg)](https://asciinema.org/a/Ih7jeaHGhZVJt7SiVshnUvlSl)
+[![asciicast](https://asciinema.org/a/PBU1TYlguqAJLNhEeGxbu6Hjl.svg)](https://asciinema.org/a/PBU1TYlguqAJLNhEeGxbu6Hjl)
 
 ## Usage Page loader
 ```bash 
