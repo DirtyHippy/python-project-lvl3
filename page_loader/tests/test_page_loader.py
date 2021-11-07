@@ -15,8 +15,7 @@ TAGS_ATTR = {
     SCRIPT_TAG: SRC_ATTR,
 }
 
-URL = 'http://www.simplehtmlguide.com/examples/images2.html'
-IMAGE_URL = 'http://www.simplehtmlguide.com/examples/photo.jpg'
+SIMPLE_URL = 'http://www.simplehtmlguide.com/examples/images2.html'
 COURCES_URL = 'https://ru.hexlet.io/courses'
 
 
@@ -39,29 +38,22 @@ def read_image(file_path):
 
 def test_file_not_found_error():
     with pytest.raises(FileNotFoundError):
-        download(URL, '')
+        download(SIMPLE_URL, '')
 
 
 def test_is_a_directory_error():
     with pytest.raises(IsADirectoryError):
-        download(URL, os.path.abspath(__file__))
+        download(SIMPLE_URL, os.path.abspath(__file__))
 
 
-def test_simple_page(requests_mock):
-    requests_mock.get(URL, text=read(get_fixture_path('page.html')))
-    requests_mock.get(IMAGE_URL, content=read(get_fixture_path('image_expected.jpg'), 'rb'))
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        file_name = download(URL, tmpdirname)
-        soup_expected = BeautifulSoup(
-            read(get_fixture_path('page_expected.html')), "html.parser")
-        assert read(file_name) == soup_expected.prettify()
-
-
-def test_cources(requests_mock):
+@ pytest.mark.parametrize("test_file, result_expected, url", [
+    ('page.html', 'page_expected.html', SIMPLE_URL),
+    ('courses.html', 'courses_expected.html', COURCES_URL)])
+def test_download(requests_mock, test_file, result_expected, url):
     requests_mock.get(ANY, text='any resourse')
-    requests_mock.get(COURCES_URL, text=read(get_fixture_path('courses.html')))
+    requests_mock.get(url, text=read(get_fixture_path(test_file)))
     with tempfile.TemporaryDirectory() as tmpdirname:
-        file_name = download(COURCES_URL, tmpdirname)
+        file_name = download(url, tmpdirname)
         soup_expected = BeautifulSoup(
-            read(get_fixture_path('courses_expected.html')), "html.parser")
+            read(get_fixture_path(result_expected)), "html.parser")
         assert read(file_name) == soup_expected.prettify()

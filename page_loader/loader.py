@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup  # type: ignore
 from urllib.parse import urlparse, urljoin
 import logging
 from progress.bar import Bar  # type: ignore
-from typing import Dict
+from typing import Dict, Any
 
 
 POSTFIX_RESOURCE_PATH = '_files'
@@ -46,18 +46,23 @@ def format_res_name(url: str, res_path: str):
     return replace_characters(f'{parsed_url.hostname}{parsed_path}') + res_ext
 
 
-def download(url: str, output_path: str = os.getcwd()):
-    if not os.path.exists(output_path):
-        raise FileNotFoundError(output_path)
-    elif not os.path.isdir(output_path):
-        raise IsADirectoryError(output_path)
-
+def get_url(url: str) -> Any:
     try:
         response = requests.get(url)
     except requests.exceptions.RequestException:
         error_msg = f"Can't download url {url}"
         logging.error(error_msg)
         raise Exception(error_msg)
+    return response
+
+
+def download(url: str, output_path: str = os.getcwd()):
+    if not os.path.exists(output_path):
+        raise FileNotFoundError(output_path)
+    elif not os.path.isdir(output_path):
+        raise IsADirectoryError(output_path)
+
+    response = get_url(url)
 
     soup = BeautifulSoup(response.text, "html.parser")
     formatted_url = format_url(url)
@@ -107,7 +112,7 @@ def get_resource(found_resources: Dict[str, list],
                 full_res_path = os.path.join(resource_path, res_path_new)
                 res[inner_tag] = os.path.join(os.path.basename(resource_path), res_path_new)
                 if not os.path.isfile(full_res_path):
-                    response = requests.get(res_url)
+                    response = get_url(res_url)
                     with open(full_res_path, 'wb') as file:
                         file.write(response.content)
             bar.next()
