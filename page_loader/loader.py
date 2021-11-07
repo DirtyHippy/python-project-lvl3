@@ -56,10 +56,10 @@ def format_res_name(url: str, res_path: str):
 def get_url(url: str) -> Any:
     try:
         response = requests.get(url)
+        response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        error_msg = f"Can't download url {url}"
         logger.debug(e)
-        raise Exception(error_msg)
+        raise Exception(f"Can't download url {url}")
     return response
 
 
@@ -83,9 +83,8 @@ def save_resources(soup: BeautifulSoup, url: str, output_path: str, formatted_ur
     try:
         os.mkdir(full_resource_path)
     except OSError as e:
-        error_msg = f"Can't create directory {full_resource_path}"
         logger.debug(e)
-        raise OSError(error_msg)
+        raise OSError(f"Can't create directory {full_resource_path}")
 
     found_resources = {}
     for tag in RESOURCES:
