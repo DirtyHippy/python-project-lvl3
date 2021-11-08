@@ -5,7 +5,7 @@ import sys
 import logging
 from bs4 import BeautifulSoup  # type: ignore
 from progress.bar import Bar  # type: ignore
-from typing import Dict, Any
+from typing import Dict, Union
 from urllib.parse import urlparse, urljoin
 from functools import wraps
 
@@ -66,12 +66,12 @@ def format_res_name(url: str, res_path: str):
 
 
 @write_log
-def get_url(url: str) -> Any:
+def get_url(url: str) -> Union[requests.Response, None]:
     try:
         response = requests.get(url)
         response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        raise e(f"Can't download url {url}")
+    except requests.exceptions.RequestException:
+        raise Exception(f"Can't download url {url}")
     return response
 
 
