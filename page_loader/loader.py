@@ -70,16 +70,35 @@ def get_url(url: str) -> Any:
     try:
         response = requests.get(url)
         response.raise_for_status()
-    except requests.exceptions.RequestException:
-        raise Exception(f"Can't download url {url}")
+    except requests.exceptions.RequestException as e:
+        raise e(f"Can't download url {url}")
     return response
 
 
+@write_log
+def check_output_path(output_path: str):
+    if not os.path.exists(output_path):
+        raise FileNotFoundError(f"Path {output_path} not found")
+    elif not os.path.isdir(output_path):
+        raise IsADirectoryError(f"Path {output_path} is not a directory")
+
+
+@write_log
+def make_dir(full_resource_path: str):
+    try:
+        os.mkdir(full_resource_path)
+    except OSError:
+        raise OSError(f"Can't create directory {full_resource_path}")
+
+
 def download(url: str, output_path: str = os.getcwd()):
+    check_output_path(output_path)
     response = get_url(url)
     soup = BeautifulSoup(response.text, PARSER)
     formatted_url = format_url(url)
-    save_resources(soup, url, output_path, formatted_url)
+    full_resource_path = os.path.join(output_path, formatted_url + POSTFIX_RESOURCE_PATH)
+    make_dir(full_resource_path)
+    save_resources(soup, url, full_resource_path)
     return save_html(soup, output_path, formatted_url)
 
 
@@ -91,15 +110,7 @@ def save_html(soup: BeautifulSoup, output_path: str, formatted_url: str):
 
 
 @write_log
-def save_resources(soup: BeautifulSoup, url: str, output_path: str, formatted_url: str):
-    full_resource_path = os.path.join(output_path, formatted_url + POSTFIX_RESOURCE_PATH)
-    try:
-        if not os.path.exists(output_path):
-            raise FileNotFoundError
-        os.mkdir(full_resource_path)
-    except OSError:
-        raise OSError(f"Can't create directory {full_resource_path}")
-
+def save_resources(soup: BeautifulSoup, url: str, full_resource_path: str):
     found_resources = {}
     for tag in RESOURCES:
         found_resources[tag] = soup.findAll(tag)
