@@ -33,7 +33,7 @@ def read(file_path):
     return result
 
 
-def test_request_xception(requests_mock):
+def test_request_exception(requests_mock):
     requests_mock.get(COURCES_URL, exc=HTTPError)
     with pytest.raises(requests.exceptions.RequestException):
         with tempfile.TemporaryDirectory():
