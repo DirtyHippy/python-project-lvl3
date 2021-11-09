@@ -1,6 +1,8 @@
 import tempfile
 import os
 import pytest
+import requests
+from requests.models import HTTPError
 from page_loader.loader import download, PARSER, POSTFIX_RESOURCE_PATH
 from bs4 import BeautifulSoup  # type: ignore
 from requests_mock import ANY
@@ -25,10 +27,17 @@ def get_fixture_path(file_name):
     return os.path.join(current_dir, 'fixtures', file_name)
 
 
-def read(file_path, mode: str = 'r'):
-    with open(file_path, mode) as f:
+def read(file_path):
+    with open(file_path, 'r') as f:
         result = f.read()
     return result
+
+
+def test_request_xception(requests_mock):
+    requests_mock.get(COURCES_URL, exc=HTTPError)
+    with pytest.raises(requests.exceptions.RequestException):
+        with tempfile.TemporaryDirectory():
+            download(COURCES_URL)
 
 
 @pytest.mark.parametrize("output_path, exception", [
