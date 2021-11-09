@@ -14,9 +14,10 @@ def main():
                             help='set output path',
                             type=str)
         args = parser.parse_args()
-        download(args.url, args.output)
+        file_name = download(args.url, args.output)
     except Exception:
         sys.exit(1)
+    print(f"\n{args.url} saved to {file_name}")
     sys.exit(0)
 
 
