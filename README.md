@@ -14,6 +14,6 @@ pip install git+https://github.com/DirtyHippy/python-project-lvl3.git
 
 ## Usage Page loader
 ```bash 
-gendiff -h
+page-loader -h
 ```
-[![asciicast](https://asciinema.org/a/s6HmeNCm2nPRhEkHuKH32xVks.svg)](https://asciinema.org/a/s6HmeNCm2nPRhEkHuKH32xVks)
+[![asciicast](https://asciinema.org/a/I0TOQd9cVBlhkWHU9S0pUqNVI.svg)](https://asciinema.org/a/I0TOQd9cVBlhkWHU9S0pUqNVI)
