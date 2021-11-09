@@ -7,16 +7,6 @@ from page_loader.loader import download, PARSER, POSTFIX_RESOURCE_PATH
 from bs4 import BeautifulSoup  # type: ignore
 from requests_mock import ANY
 
-IMAGE_TAG = 'img'
-LINK_TAG = 'link'
-SCRIPT_TAG = 'script'
-SRC_ATTR = 'src'
-HREF_ATTR = 'href'
-TAGS_ATTR = {
-    IMAGE_TAG: SRC_ATTR,
-    LINK_TAG: HREF_ATTR,
-    SCRIPT_TAG: SRC_ATTR,
-}
 
 SIMPLE_URL = 'http://www.simplehtmlguide.com/examples/images2.html'
 COURCES_URL = 'https://ru.hexlet.io/courses'
