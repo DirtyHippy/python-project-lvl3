@@ -21,6 +21,9 @@ PARSER = "html.parser"
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(stream=sys.stderr)
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
@@ -123,6 +126,9 @@ def get_resource(found_resources: Dict[str, list], url: str, resource_path: str)
         inner_tag = RESOURCES[tag]
         for res in resources:
             res_path_orig = res.get(inner_tag)
+            if not res_path_orig:
+                bar.next()
+                continue
             parsed_res = urlparse(res_path_orig)
             parsed_url = urlparse(url)
             if not parsed_res.netloc or parsed_url.netloc == parsed_res.netloc:
