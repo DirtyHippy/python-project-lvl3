@@ -60,6 +60,7 @@ def is_local_res(parsed_res: ParseResult, parsed_url: ParseResult) -> bool:
 
 
 def replace_resources(soup: BeautifulSoup, url: str, resource_path: str):
+    downloaded_res = set()
     found_resources = soup.findAll(list(RESOURCES.keys()))
     bar = Bar('Processing', max=len(found_resources))
     for res in found_resources:
@@ -72,8 +73,9 @@ def replace_resources(soup: BeautifulSoup, url: str, resource_path: str):
         res_url = urljoin(url, res_path_orig)
         full_res_path = os.path.join(resource_path, res_path_new)
         res[inner_tag] = os.path.join(os.path.basename(resource_path), res_path_new)
-        if not os.path.isfile(full_res_path):
+        if full_res_path not in downloaded_res:
             response = get_res(res_url)
             if response:
                 save_res(response, full_res_path)
+                downloaded_res.add(full_res_path)
         bar.next()
