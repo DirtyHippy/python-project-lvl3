@@ -4,7 +4,8 @@ from bs4 import BeautifulSoup  # type: ignore
 from progress.bar import Bar  # type: ignore
 from typing import Dict
 from urllib.parse import ParseResult, urlparse, urljoin
-from page_loader.helper import save_content, get_url, is_valid_output_path, make_dir
+from page_loader.network_utils import save_content, get_url
+from page_loader.file_utils import check_output_path, make_dir
 
 
 POSTFIX_RESOURCE_PATH = '_files'
@@ -47,16 +48,16 @@ def format_res_name(url: str, res_path: str):
 
 
 def download(url: str, output_path: str = os.getcwd()):
-    if is_valid_output_path(output_path):
-        response = get_url(url)
-        soup = BeautifulSoup(response.text, PARSER)
-        formatted_url = format_url(url)
-        full_resource_path = os.path.join(output_path, formatted_url + POSTFIX_RESOURCE_PATH)
-        make_dir(full_resource_path)
-        save_resources(find_resources(soup), url, full_resource_path)
-        full_file_name = os.path.join(output_path, formatted_url + FILE_EXT)
-        save_content(soup.prettify(), full_file_name, 'w')
-        return full_file_name
+    check_output_path(output_path)
+    response = get_url(url)
+    soup = BeautifulSoup(response.text, PARSER)
+    formatted_url = format_url(url)
+    full_resource_path = os.path.join(output_path, formatted_url + POSTFIX_RESOURCE_PATH)
+    make_dir(full_resource_path)
+    save_resources(find_resources(soup), url, full_resource_path)
+    full_file_name = os.path.join(output_path, formatted_url + FILE_EXT)
+    save_content(soup.prettify(), full_file_name, 'w')
+    return full_file_name
 
 
 def find_resources(soup: BeautifulSoup) -> Dict[str, list]:

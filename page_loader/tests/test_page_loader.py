@@ -30,12 +30,10 @@ def test_app_internal_error(requests_mock):
             download(COURCES_URL)
 
 
-@pytest.mark.parametrize("output_path, exception", [
-    ('', FileNotFoundError),
-    (os.path.abspath(__file__), IsADirectoryError)])
-def test_os_error(requests_mock, output_path, exception):
+@pytest.mark.parametrize("output_path", ['', os.path.abspath(__file__)])
+def test_os_error(requests_mock, output_path):
     requests_mock.get(ANY, text='any resourse')
-    with pytest.raises(exception):
+    with pytest.raises(AppInternalError):
         with tempfile.TemporaryDirectory():
             download(SIMPLE_URL, output_path)
 
