@@ -36,15 +36,12 @@ def format_url(url: str) -> str:
 
 
 def format_res_name(url: str, res_path: str):
-    parsed_url = urlparse(url)
     res_name, res_ext = os.path.splitext(res_path)
     parsed_res = urlparse(res_name)
     if res_ext == '':
         res_ext = FILE_EXT
     parsed_path = parsed_res.path
-    if not parsed_path.startswith('/'):
-        parsed_path = '/' + parsed_path
-    return replace_characters(f'{parsed_url.hostname}{parsed_path}') + res_ext
+    return format_url(urljoin(url, parsed_path)) + res_ext
 
 
 def download(url: str, output_path: str = os.getcwd()):

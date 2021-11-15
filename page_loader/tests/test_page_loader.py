@@ -38,8 +38,27 @@ def test_os_error(requests_mock, output_path):
             download(SIMPLE_URL, output_path)
 
 
+'''
+
 @pytest.mark.parametrize("test_file, result_expected, resources_expected, url", [
     ('simple.html', 'simple_expected.html', 'simple_resources_expected.txt', SIMPLE_URL),
+    ('courses.html', 'courses_expected.html', 'courses_resources_expected.txt', COURCES_URL)])
+def test_download(requests_mock, test_file, result_expected, resources_expected, url):
+    requests_mock.get(ANY, text='any resourse')
+    requests_mock.get(url, text=read(get_fixture_path(test_file)))
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        file_name = download(url, tmpdirname)
+        soup_expected = BeautifulSoup(
+            read(get_fixture_path(result_expected)), PARSER)
+        assert read(file_name) == soup_expected.prettify()
+        name, _ = os.path.splitext(file_name)
+        resources = os.listdir(name + POSTFIX_RESOURCE_PATH)
+        resources_expected = read(get_fixture_path(resources_expected)).split()
+        assert sorted(resources) == sorted(resources_expected)
+'''
+
+
+@pytest.mark.parametrize("test_file, result_expected, resources_expected, url", [
     ('courses.html', 'courses_expected.html', 'courses_resources_expected.txt', COURCES_URL)])
 def test_download(requests_mock, test_file, result_expected, resources_expected, url):
     requests_mock.get(ANY, text='any resourse')
