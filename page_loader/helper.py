@@ -4,7 +4,8 @@ import requests
 import traceback
 import os
 from functools import wraps
-from typing import Union, Any
+from typing import Union
+from page_loader.exceptions import AppInternalError
 
 
 logger = logging.getLogger(__name__)
@@ -33,8 +34,8 @@ def get_url(url: str) -> Union[requests.Response, None]:
     try:
         response = requests.get(url)
         response.raise_for_status()
-    except requests.exceptions.RequestException:
-        raise requests.exceptions.RequestException(f"Can't download url {url}")
+    except requests.exceptions.RequestException as e:
+        raise AppInternalError(f"Can't download url {url}") from e
     return response
 
 
@@ -51,14 +52,14 @@ def is_valid_output_path(output_path: str) -> Union[bool, None]:
 def make_dir(full_resource_path: str):
     try:
         os.mkdir(full_resource_path)
-    except OSError:
-        raise OSError(f"Can't create directory {full_resource_path}")
+    except OSError as e:
+        raise AppInternalError(f"Can't create directory {full_resource_path}") from e
 
 
 @write_log
-def save_content(content: Any, to_file_name: str, mode: str):
+def save_content(content: bytes, to_file_name: str, mode: str):
     try:
         with open(to_file_name, mode) as f:
             f.write(content)
-    except OSError:
-        raise OSError(f"Can't save to {to_file_name}")
+    except OSError as e:
+        raise AppInternalError(f"Can't save to {to_file_name}") from e

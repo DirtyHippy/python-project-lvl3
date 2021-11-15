@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 from page_loader.loader import download
+from page_loader.exceptions import AppInternalError
 
 
 def main():
@@ -15,6 +16,8 @@ def main():
                             type=str)
         args = parser.parse_args()
         file_name = download(args.url, args.output)
+    except AppInternalError:
+        sys.exit(1)
     except Exception:
         sys.exit(1)
     print(f"\n{args.url} saved to {file_name}")

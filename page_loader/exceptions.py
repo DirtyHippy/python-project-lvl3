@@ -1,0 +1,2 @@
+class AppInternalError(Exception):
+    pass

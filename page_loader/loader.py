@@ -3,7 +3,7 @@ import os
 from bs4 import BeautifulSoup  # type: ignore
 from progress.bar import Bar  # type: ignore
 from typing import Dict
-from urllib.parse import urlparse, urljoin
+from urllib.parse import ParseResult, urlparse, urljoin
 from page_loader.helper import save_content, get_url, is_valid_output_path, make_dir
 
 
@@ -63,6 +63,10 @@ def find_resources(soup: BeautifulSoup) -> Dict[str, list]:
     return {tag: soup.findAll(tag) for tag in RESOURCES}
 
 
+def is_local_res(parsed_res: ParseResult, parsed_url: ParseResult) -> bool:
+    return not parsed_res.netloc or parsed_url.netloc == parsed_res.netloc
+
+
 def save_resources(found_resources: Dict[str, list], url: str, resource_path: str):
     bar = Bar('Processing', max=sum([len(val) for val in found_resources.values()]))
     for tag, resources in found_resources.items():
@@ -74,12 +78,14 @@ def save_resources(found_resources: Dict[str, list], url: str, resource_path: st
                 continue
             parsed_res = urlparse(res_path_orig)
             parsed_url = urlparse(url)
-            if not parsed_res.netloc or parsed_url.netloc == parsed_res.netloc:
-                res_path_new = format_res_name(url, res_path_orig)
-                res_url = urljoin(url, res_path_orig)
-                full_res_path = os.path.join(resource_path, res_path_new)
-                res[inner_tag] = os.path.join(os.path.basename(resource_path), res_path_new)
-                if not os.path.isfile(full_res_path):
-                    response = get_url(res_url)
-                    save_content(response.content, full_res_path, 'wb')
+            if not is_local_res(parsed_res, parsed_url):
+                bar.next()
+                continue
+            res_path_new = format_res_name(url, res_path_orig)
+            res_url = urljoin(url, res_path_orig)
+            full_res_path = os.path.join(resource_path, res_path_new)
+            res[inner_tag] = os.path.join(os.path.basename(resource_path), res_path_new)
+            if not os.path.isfile(full_res_path):
+                response = get_url(res_url)
+                save_content(response.content, full_res_path, 'wb')
             bar.next()

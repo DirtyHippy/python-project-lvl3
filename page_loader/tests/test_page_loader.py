@@ -1,11 +1,11 @@
 import tempfile
 import os
 import pytest
-import requests
 from requests.models import HTTPError
 from page_loader.loader import download, PARSER, POSTFIX_RESOURCE_PATH
 from bs4 import BeautifulSoup  # type: ignore
 from requests_mock import ANY
+from page_loader.exceptions import AppInternalError
 
 
 SIMPLE_URL = 'http://www.simplehtmlguide.com/examples/images2.html'
@@ -23,9 +23,9 @@ def read(file_path):
     return result
 
 
-def test_request_exception(requests_mock):
+def test_app_internal_error(requests_mock):
     requests_mock.get(COURCES_URL, exc=HTTPError)
-    with pytest.raises(requests.exceptions.RequestException):
+    with pytest.raises(AppInternalError):
         with tempfile.TemporaryDirectory():
             download(COURCES_URL)
 
