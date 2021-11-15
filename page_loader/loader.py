@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup  # type: ignore
 from progress.bar import Bar  # type: ignore
 from typing import Dict
 from urllib.parse import ParseResult, urlparse, urljoin
-from page_loader.network_utils import save_content, get_url
+from page_loader.network_utils import save_res, get_html, save_html, get_res
 from page_loader.file_utils import check_output_path, make_dir
 
 
@@ -49,14 +49,13 @@ def format_res_name(url: str, res_path: str):
 
 def download(url: str, output_path: str = os.getcwd()):
     check_output_path(output_path)
-    response = get_url(url)
-    soup = BeautifulSoup(response.text, PARSER)
+    soup = BeautifulSoup(get_html(url), PARSER)
     formatted_url = format_url(url)
     full_resource_path = os.path.join(output_path, formatted_url + POSTFIX_RESOURCE_PATH)
     make_dir(full_resource_path)
     save_resources(find_resources(soup), url, full_resource_path)
     full_file_name = os.path.join(output_path, formatted_url + FILE_EXT)
-    save_content(soup.prettify(), full_file_name, 'w')
+    save_html(soup.prettify(), full_file_name)
     return full_file_name
 
 
@@ -74,12 +73,7 @@ def save_resources(found_resources: Dict[str, list], url: str, resource_path: st
         inner_tag = RESOURCES[tag]
         for res in resources:
             res_path_orig = res.get(inner_tag)
-            if not res_path_orig:
-                bar.next()
-                continue
-            parsed_res = urlparse(res_path_orig)
-            parsed_url = urlparse(url)
-            if not is_local_res(parsed_res, parsed_url):
+            if not res_path_orig or not is_local_res(urlparse(res_path_orig), urlparse(url)):
                 bar.next()
                 continue
             res_path_new = format_res_name(url, res_path_orig)
@@ -87,6 +81,7 @@ def save_resources(found_resources: Dict[str, list], url: str, resource_path: st
             full_res_path = os.path.join(resource_path, res_path_new)
             res[inner_tag] = os.path.join(os.path.basename(resource_path), res_path_new)
             if not os.path.isfile(full_res_path):
-                response = get_url(res_url)
-                save_content(response.content, full_res_path, 'wb')
+                response = get_res(res_url)
+                if response:
+                    save_res(response, full_res_path)
             bar.next()
