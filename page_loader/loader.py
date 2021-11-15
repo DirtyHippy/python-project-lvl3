@@ -2,7 +2,6 @@ import re
 import os
 from bs4 import BeautifulSoup  # type: ignore
 from progress.bar import Bar  # type: ignore
-from typing import Dict
 from urllib.parse import ParseResult, urlparse, urljoin
 from page_loader.network_utils import save_res, get_html, save_html, get_res
 from page_loader.file_utils import check_output_path, make_dir
@@ -50,35 +49,31 @@ def download(url: str, output_path: str = os.getcwd()):
     formatted_url = format_url(url)
     full_resource_path = os.path.join(output_path, formatted_url + POSTFIX_RESOURCE_PATH)
     make_dir(full_resource_path)
-    save_resources(find_resources(soup), url, full_resource_path)
+    replace_resources(soup, url, full_resource_path)
     full_file_name = os.path.join(output_path, formatted_url + FILE_EXT)
     save_html(soup.prettify(), full_file_name)
     return full_file_name
-
-
-def find_resources(soup: BeautifulSoup) -> Dict[str, list]:
-    return {tag: soup.findAll(tag) for tag in RESOURCES}
 
 
 def is_local_res(parsed_res: ParseResult, parsed_url: ParseResult) -> bool:
     return not parsed_res.netloc or parsed_url.netloc == parsed_res.netloc
 
 
-def save_resources(found_resources: Dict[str, list], url: str, resource_path: str):
-    bar = Bar('Processing', max=sum([len(val) for val in found_resources.values()]))
-    for tag, resources in found_resources.items():
-        inner_tag = RESOURCES[tag]
-        for res in resources:
-            res_path_orig = res.get(inner_tag)
-            if not res_path_orig or not is_local_res(urlparse(res_path_orig), urlparse(url)):
-                bar.next()
-                continue
-            res_path_new = format_res_name(url, res_path_orig)
-            res_url = urljoin(url, res_path_orig)
-            full_res_path = os.path.join(resource_path, res_path_new)
-            res[inner_tag] = os.path.join(os.path.basename(resource_path), res_path_new)
-            if not os.path.isfile(full_res_path):
-                response = get_res(res_url)
-                if response:
-                    save_res(response, full_res_path)
+def replace_resources(soup: BeautifulSoup, url: str, resource_path: str):
+    found_resources = soup.findAll(list(RESOURCES.keys()))
+    bar = Bar('Processing', max=len(found_resources))
+    for res in found_resources:
+        inner_tag = RESOURCES[res.name]
+        res_path_orig = res.get(inner_tag)
+        if not res_path_orig or not is_local_res(urlparse(res_path_orig), urlparse(url)):
             bar.next()
+            continue
+        res_path_new = format_res_name(url, res_path_orig)
+        res_url = urljoin(url, res_path_orig)
+        full_res_path = os.path.join(resource_path, res_path_new)
+        res[inner_tag] = os.path.join(os.path.basename(resource_path), res_path_new)
+        if not os.path.isfile(full_res_path):
+            response = get_res(res_url)
+            if response:
+                save_res(response, full_res_path)
+        bar.next()
