@@ -2,8 +2,8 @@ import re
 import os
 from bs4 import BeautifulSoup  # type: ignore
 from progress.bar import Bar  # type: ignore
-from urllib.parse import ParseResult, urlparse, urljoin
-from page_loader.network_utils import save_res, get_html, save_html, get_res
+from urllib.parse import urlparse, urljoin
+from page_loader.network_utils import save_resource, get_html, save_html, get_resource
 from page_loader.file_utils import check_output_path, make_dir
 
 
@@ -34,13 +34,13 @@ def format_url(url: str) -> str:
     return formatted_url
 
 
-def format_res_name(url: str, res_path: str):
-    res_name, res_ext = os.path.splitext(res_path)
-    parsed_res = urlparse(res_name)
-    if res_ext == '':
-        res_ext = FILE_EXT
-    parsed_path = parsed_res.path
-    return format_url(urljoin(url, parsed_path)) + res_ext
+def format_resource_name(url: str, resource_path: str):
+    resource_name, resource_ext = os.path.splitext(resource_path)
+    parsed_resource = urlparse(resource_name)
+    if resource_ext == '':
+        resource_ext = FILE_EXT
+    parsed_path = parsed_resource.path
+    return format_url(urljoin(url, parsed_path)) + resource_ext
 
 
 def download(url: str, output_path: str = os.getcwd()):
@@ -55,27 +55,29 @@ def download(url: str, output_path: str = os.getcwd()):
     return full_file_name
 
 
-def is_local_res(parsed_res: ParseResult, parsed_url: ParseResult) -> bool:
-    return not parsed_res.netloc or parsed_url.netloc == parsed_res.netloc
+def is_local_resource(resource_path: str, url: str) -> bool:
+    parsed_resource_path = urlparse(resource_path)
+    parsed_url = urlparse(url)
+    return not parsed_resource_path.netloc or parsed_url.netloc == parsed_resource_path.netloc
 
 
 def replace_resources(soup: BeautifulSoup, url: str, resource_path: str):
-    downloaded_res = set()
+    downloaded_resources = set()
     found_resources = soup.findAll(list(RESOURCES.keys()))
     bar = Bar('Processing', max=len(found_resources))
-    for res in found_resources:
-        inner_tag = RESOURCES[res.name]
-        res_path_orig = res.get(inner_tag)
-        if not res_path_orig or not is_local_res(urlparse(res_path_orig), urlparse(url)):
+    for resource in found_resources:
+        inner_tag = RESOURCES[resource.name]
+        resource_path_orig = resource.get(inner_tag)
+        if not resource_path_orig or not is_local_resource(resource_path_orig, url):
             bar.next()
             continue
-        res_path_new = format_res_name(url, res_path_orig)
-        res_url = urljoin(url, res_path_orig)
-        full_res_path = os.path.join(resource_path, res_path_new)
-        res[inner_tag] = os.path.join(os.path.basename(resource_path), res_path_new)
-        if full_res_path not in downloaded_res:
-            response = get_res(res_url)
+        resource_path_new = format_resource_name(url, resource_path_orig)
+        resource_url = urljoin(url, resource_path_orig)
+        full_resource_path = os.path.join(resource_path, resource_path_new)
+        resource[inner_tag] = os.path.join(os.path.basename(resource_path), resource_path_new)
+        if full_resource_path not in downloaded_resources:
+            response = get_resource(resource_url)
             if response:
-                save_res(response, full_res_path)
-                downloaded_res.add(full_res_path)
+                if save_resource(response, full_resource_path):
+                    downloaded_resources.add(full_resource_path)
         bar.next()

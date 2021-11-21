@@ -1,10 +1,13 @@
 import requests
+import logging
+import logging.config
 from typing import Union
 from page_loader.exceptions import AppInternalError
-from page_loader.logging_utils import init_logger
+from page_loader.logging_utils import LOGGING_CONFIG
 
 
-logger = init_logger()
+logging.config.dictConfig(LOGGING_CONFIG)
+logger = logging.getLogger(__name__)
 
 
 def get_html(url: str) -> str:
@@ -17,7 +20,7 @@ def get_html(url: str) -> str:
     return response.text
 
 
-def get_res(url: str) -> Union[requests.Response, None]:
+def get_resource(url: str) -> Union[requests.Response, None]:
     response = None
     try:
         response = requests.get(url, stream=True)
@@ -37,12 +40,13 @@ def save_html(content: str, to_file_name: str):
         raise AppInternalError(f"Can't save html to {to_file_name}") from e
 
 
-def save_res(response: requests.Response, to_file_name: str):
+def save_resource(response: requests.Response, to_file_name: str) -> bool:
     try:
         with open(to_file_name, 'wb') as f:
             for chunk in response.iter_content(chunk_size=None):
                 f.write(chunk)
-                f.flush()
-    except OSError as e:
+        return True
+    except (OSError, requests.exceptions.RequestException) as e:
         logger.debug(e)
         logger.error(f"Can't save resource to {to_file_name}")
+    return False

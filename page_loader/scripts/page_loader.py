@@ -1,12 +1,15 @@
 import argparse
 import os
 import sys
+import logging
+import logging.config
 from page_loader.loader import download
 from page_loader.exceptions import AppInternalError
-from page_loader.logging_utils import init_logger
+from page_loader.logging_utils import LOGGING_CONFIG
 
 
-logger = init_logger()
+logging.config.dictConfig(LOGGING_CONFIG)
+logger = logging.getLogger(__name__)
 
 
 def main():

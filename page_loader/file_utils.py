@@ -1,9 +1,12 @@
 import os
+import logging
+import logging.config
+from page_loader.logging_utils import LOGGING_CONFIG
 from page_loader.exceptions import AppInternalError
-from page_loader.logging_utils import init_logger
 
 
-logger = init_logger()
+logging.config.dictConfig(LOGGING_CONFIG)
+logger = logging.getLogger(__name__)
 
 
 def check_output_path(output_path: str) -> None:

@@ -1,13 +1,4 @@
 import sys
-import logging.config
-import logging
-
-
-def init_logger() -> logging.Logger:
-    logging.config.dictConfig(LOGGING_CONFIG)
-    logger = logging.getLogger('page_loader_logger')
-    return logger
-
 
 LOGGING_CONFIG = {
     'version': 1,
